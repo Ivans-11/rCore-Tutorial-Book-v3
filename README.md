@@ -1,21 +1,26 @@
 # rCore-Tutorial-Book-v3
 Documentation of rCore-Tutorial version 3 in Chinese.
 
-##  news
+## Convert to Markdown
 
-- 2022.07.01 Welcome to JOIN [**Open-Source-OS-Training-Camp-2022 !**](https://learningos.github.io/rust-based-os-comp2022/)
-
-## [Deployed Page](https://rcore-os.github.io/rCore-Tutorial-Book-v3/).
-
-If you cannot access `github.io` normally due to network problems, please visit the [synchronized version](http://wyfcyx.gitee.io/rcore-tutorial-book-v3) hosted on gitee.
-
-## Deploy your own docs
+1. Prepare the requirements (It is recommended to use a virtual environment)
 
 ```sh
-$ FORK  https://github.com/rcore-os/rCore-Tutorial-Book-v3.git  to YOUR REPO 
-$ git clone YOUR REPO(e.g. https://github.com/YOUR/rCore-Tutorial-Book-v3.git)
-$ cd rCore-Tutorial-Book-v3
-$ make html # After that, the generated doc can be found in rCore-Tutorial-Book-v3/build/html
-$ # modify the doc
-$ git push # or pull request
+pip install sphinx-markdown-builder sphinx-comments sphinxcontrib-mermaid
 ```
+
+2. Clone the repository
+
+```sh
+git clone --recurse-submodules https://github.com/Ivans-11/rCore-Tutorial-Book-v3.git
+cd rCore-Tutorial-Book-v3
+```
+
+3. Build and Post-process
+
+```sh
+sphinx-build -b markdown source build
+python post-process.py
+```
+
+4. The generated markdown files are in the `build` directory.

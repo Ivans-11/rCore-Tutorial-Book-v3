@@ -132,3 +132,53 @@ import errno
 import sphinx.util.osutil
 sphinx.util.osutil.ENOENT = errno.ENOENT
 version = release
+
+from docutils import nodes
+
+ADMONITION_MAP = {
+    nodes.caution: "CAUTION",
+    nodes.danger: "DANGER",
+    nodes.tip: "TIP",
+    nodes.error: "ERROR",
+    nodes.note: "NOTE",
+    nodes.warning: "WARNING",
+    nodes.attention: "ATTENTION",
+    nodes.hint: "HINT",
+    nodes.important: "IMPORTANT",
+    nodes.admonition: None,  # Custom title
+}
+
+from sphinxcontrib.mermaid import mermaid
+
+def transform_nodes(app, doctree, fromdocname):
+    # caption -> paragraph
+    for node in doctree.traverse(nodes.caption):
+        para = nodes.paragraph(text=node.astext())
+        node.replace_self(para)
+
+    # admonitions -> titled paragraphs
+    for cls, title in ADMONITION_MAP.items():
+        for node in doctree.traverse(cls):
+            children = list(node.children)  # Preserve original structure
+            if cls == nodes.admonition:
+                if children and isinstance(children[0], nodes.title):
+                    node_title = children[0].astext()
+                else:
+                    node_title = "ADMONITION"
+            else:
+                node_title = title
+            heading = nodes.paragraph(text=f"#### {node_title.upper()}")
+            new_container = nodes.container()
+            new_container += heading
+            new_container.extend(children)
+            node.replace_self(new_container)
+
+    # mermaid -> literal_block
+    for node in doctree.traverse(mermaid):
+        code = node.get("code", "")
+        literal = nodes.literal_block(code, code)
+        literal["language"] = "mermaid"
+        node.replace_self(literal)
+
+def setup(app):
+    app.connect('doctree-resolved', transform_nodes)
