@@ -1,40 +1,60 @@
 #!/usr/bin/env python3
 import re
-import os
+import shutil
 from pathlib import Path
 
-BUILD_DIR = Path("build")
+BUILD_DIR = Path("build/md")
 SOURCE_DIR = Path("source")
 
-# Fix image paths in Markdown files
-def fix_image_path(md_file: Path):
-    text = md_file.read_text(encoding="utf-8")
+IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp"}
 
-    pattern = re.compile(r'(!\[.*?\]\()([^\)]+)(\))')
+IMG_PATTERN = re.compile(r'!\[([^\]]*)\]\(([^)]+)\)')
+
+def process_markdown(md_file: Path):
+    text = md_file.read_text(encoding="utf-8")
+    changed = False
 
     def replacer(match):
-        prefix, img_path_str, suffix = match.groups()
-        img_path = Path(img_path_str)
+        nonlocal changed
+        alt_text, img_path_str = match.groups()
+        img_path_str = img_path_str.strip()
 
-        if img_path.is_absolute() or "://" in img_path_str:
+        if "://" in img_path_str:
             return match.group(0)
 
-        original_path = SOURCE_DIR / img_path
-        new_rel_path = os.path.relpath(original_path, start=md_file.parent)
-        new_rel_path = new_rel_path.replace(os.sep, "/")
+        img_path = Path(img_path_str)
 
-        return f"{prefix}{new_rel_path}{suffix}"
+        if img_path.suffix.lower() not in IMAGE_EXTS:
+            return match.group(0)
 
-    new_text = pattern.sub(replacer, text)
+        src_img = (SOURCE_DIR / img_path).resolve()
 
-    md_file.write_text(new_text, encoding="utf-8")
-    print(f"[Fixed] {md_file}")
+        if not src_img.exists():
+            print(f"[WARN] Image not found: {src_img}")
+            return match.group(0)
 
-def fix_all_markdown(build_dir: Path):
-    md_files = list(build_dir.rglob("*.md"))
-    print(f"Found {len(md_files)} Markdown files.")
-    for md_file in md_files:
-        fix_image_path(md_file)
+        dst_img = md_file.parent / src_img.name
+
+        if not dst_img.exists():
+            shutil.copy2(src_img, dst_img)
+            print(f"[COPY] {src_img} -> {dst_img}")
+
+        changed = True
+        return f"![{alt_text}](./{dst_img.name})"
+
+    new_text = IMG_PATTERN.sub(replacer, text)
+
+    if changed:
+        md_file.write_text(new_text, encoding="utf-8")
+        print(f"[UPDATE] {md_file}")
+
+
+def main():
+    md_files = list(BUILD_DIR.rglob("*.md"))
+    print(f"Found {len(md_files)} Markdown files")
+
+    for md in md_files:
+        process_markdown(md)
 
 if __name__ == "__main__":
-    fix_all_markdown(BUILD_DIR)
+    main()

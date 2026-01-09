@@ -19,8 +19,8 @@ cd rCore-Tutorial-Book-v3
 3. Build and Post-process
 
 ```sh
-sphinx-build -b markdown source build
+sphinx-build -b markdown source build/md
 python post-process.py
 ```
 
-4. The generated markdown files are in the `build` directory.
+4. The generated markdown files are in the `build/md` directory.
